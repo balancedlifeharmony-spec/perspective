@@ -1,0 +1,1517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perspective - The Wisdom Network</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* Welcome Screen */
+        .welcome-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 80%, #16213e 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: all 0.8s ease;
+        }
+
+        .welcome-screen.hidden {
+            opacity: 0;
+            transform: scale(1.1);
+            pointer-events: none;
+        }
+
+        .welcome-content {
+            text-align: center;
+            max-width: 600px;
+            padding: 40px;
+        }
+
+        .welcome-title {
+            font-size: 3.5em;
+            font-weight: 700;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+
+        .welcome-subtitle {
+            font-size: 1.3em;
+            color: #cccccc;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        .journey-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 40px 0;
+        }
+
+        .journey-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+        }
+
+        .journey-card:hover {
+            background: rgba(78, 205, 196, 0.1);
+            border-color: #4ecdc4;
+            transform: translateY(-3px);
+        }
+
+        .journey-card.selected {
+            background: rgba(78, 205, 196, 0.15);
+            border-color: #4ecdc4;
+            box-shadow: 0 0 20px rgba(78, 205, 196, 0.3);
+        }
+
+        .journey-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .journey-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #4ecdc4;
+            margin-bottom: 8px;
+        }
+
+        .journey-desc {
+            font-size: 0.9em;
+            color: #cccccc;
+            line-height: 1.4;
+        }
+
+        .start-button {
+            background: linear-gradient(45deg, #4ecdc4, #45b7d1);
+            border: none;
+            color: white;
+            padding: 15px 40px;
+            border-radius: 30px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 30px;
+        }
+
+        .start-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(78, 205, 196, 0.3);
+        }
+
+        .start-button:disabled {
+            background: rgba(255, 255, 255, 0.1);
+            color: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Main Interface */
+        .top-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 80px;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.8em;
+            font-weight: 700;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .progress-container {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .journey-progress {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 8px 20px;
+            font-size: 0.9em;
+            color: #4ecdc4;
+            border: 1px solid rgba(78, 205, 196, 0.3);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+
+        .control-btn:hover, .control-btn.active {
+            background: rgba(78, 205, 196, 0.3);
+            border-color: #4ecdc4;
+            transform: translateY(-1px);
+        }
+
+        .network-container {
+            position: absolute;
+            top: 80px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+        }
+
+        /* Reading List Panel */
+        .reading-list {
+            position: absolute;
+            top: 100px;
+            right: 20px;
+            width: 300px;
+            background: rgba(10, 10, 26, 0.95);
+            border-radius: 15px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-height: 60vh;
+            overflow-y: auto;
+            z-index: 150;
+            transform: translateX(100%);
+            transition: transform 0.4s ease;
+        }
+
+        .reading-list.visible {
+            transform: translateX(0);
+        }
+
+        .reading-list h3 {
+            color: #4ecdc4;
+            margin: 0;
+            padding: 20px 20px 10px;
+            font-size: 1.2em;
+        }
+
+        .reading-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .reading-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .reading-item.completed {
+            opacity: 0.6;
+        }
+
+        .reading-item.next {
+            background: rgba(78, 205, 196, 0.1);
+            border-left: 4px solid #4ecdc4;
+        }
+
+        .book-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .book-info {
+            flex-grow: 1;
+        }
+
+        .book-mini-title {
+            font-size: 0.9em;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 3px;
+        }
+
+        .book-mini-author {
+            font-size: 0.8em;
+            color: #999;
+        }
+
+        .toggle-list {
+            position: absolute;
+            top: 100px;
+            right: 20px;
+            background: rgba(78, 205, 196, 0.2);
+            border: 1px solid rgba(78, 205, 196, 0.4);
+            color: #4ecdc4;
+            padding: 10px 15px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+            z-index: 200;
+        }
+
+        .toggle-list:hover {
+            background: rgba(78, 205, 196, 0.3);
+        }
+
+        /* Info Panel */
+        .info-panel {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            right: 30px;
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(10, 10, 26, 0.95);
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 200;
+            max-height: 60vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+        }
+
+        .info-panel.visible {
+            transform: translateY(0);
+        }
+
+        .panel-header {
+            padding: 30px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+
+        .book-title {
+            font-size: 2em;
+            font-weight: 700;
+            margin: 0;
+            background: linear-gradient(45deg, #4ecdc4, #45b7d1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .book-author {
+            font-size: 1.2em;
+            color: #cccccc;
+            margin: 10px 0 20px 0;
+            font-style: italic;
+        }
+
+        .perspective-shift {
+            background: linear-gradient(135deg, rgba(78, 205, 196, 0.15), rgba(69, 183, 209, 0.15));
+            border: 1px solid rgba(78, 205, 196, 0.3);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 1.1em;
+            line-height: 1.5;
+            margin: 20px 0;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .action-btn {
+            background: rgba(78, 205, 196, 0.2);
+            border: 1px solid rgba(78, 205, 196, 0.4);
+            color: #4ecdc4;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:hover {
+            background: rgba(78, 205, 196, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .panel-content {
+            padding: 30px;
+        }
+
+        .section {
+            margin: 30px 0;
+        }
+
+        .section h3 {
+            color: #4ecdc4;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .insight-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #45b7d1;
+            transition: all 0.3s ease;
+        }
+
+        .insight-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .insight-title {
+            color: #45b7d1;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .quote-block {
+            background: rgba(78, 205, 196, 0.1);
+            padding: 25px;
+            border-radius: 15px;
+            border-left: 4px solid #4ecdc4;
+            position: relative;
+            margin: 20px 0;
+        }
+
+        .quote-text {
+            font-size: 1.2em;
+            font-style: italic;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .quote-context {
+            color: #cccccc;
+            font-size: 0.9em;
+        }
+
+        .practical-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .practical-list li {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            margin: 12px 0;
+            border-radius: 10px;
+            border-left: 4px solid #96ceb4;
+            position: relative;
+            padding-left: 50px;
+        }
+
+        .practical-list li::before {
+            content: '→';
+            color: #96ceb4;
+            font-weight: bold;
+            font-size: 1.2em;
+            position: absolute;
+            left: 20px;
+            top: 15px;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 25px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #cccccc;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 107, 107, 0.3);
+            border-color: #ff6b6b;
+            color: #ff6b6b;
+        }
+
+        /* Network styling */
+        .node {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            filter: drop-shadow(0 2px 8px rgba(255,255,255,0.2));
+        }
+
+        .node:hover {
+            filter: drop-shadow(0 4px 15px rgba(255,255,255,0.4)) brightness(1.2);
+            transform: scale(1.08);
+        }
+
+        .node.selected {
+            filter: drop-shadow(0 0 20px rgba(78, 205, 196, 0.8)) brightness(1.3);
+            transform: scale(1.15);
+        }
+
+        .node.completed {
+            filter: drop-shadow(0 0 10px rgba(96, 206, 180, 0.6)) brightness(0.8);
+            opacity: 0.7;
+        }
+
+        .node.next {
+            filter: drop-shadow(0 0 25px rgba(255, 107, 107, 0.8)) brightness(1.4);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .node-label {
+            font-size: 11px;
+            fill: white;
+            text-anchor: middle;
+            pointer-events: none;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            font-weight: 600;
+        }
+
+        .link {
+            stroke: #666;
+            stroke-opacity: 0.3;
+            transition: all 0.3s ease;
+        }
+
+        .concept-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 20px 0;
+            justify-content: center;
+        }
+
+        .concept-tag {
+            background: rgba(78, 205, 196, 0.2);
+            color: #4ecdc4;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            border: 1px solid rgba(78, 205, 196, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .concept-tag:hover {
+            background: rgba(78, 205, 196, 0.3);
+            transform: scale(1.05);
+        }
+
+        @media (max-width: 768px) {
+            .top-bar {
+                flex-direction: column;
+                height: 120px;
+                padding: 15px;
+                gap: 15px;
+            }
+
+            .logo {
+                font-size: 1.4em;
+            }
+
+            .controls {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 10px;
+            }
+
+            .control-btn {
+                padding: 8px 16px;
+                font-size: 0.8em;
+            }
+
+            .network-container {
+                top: 120px;
+            }
+
+            .info-panel {
+                left: 15px;
+                right: 15px;
+                max-height: 70vh;
+            }
+
+            .reading-list {
+                width: 250px;
+            }
+
+            .welcome-title {
+                font-size: 2.5em;
+            }
+
+            .journey-options {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Welcome Screen -->
+        <div class="welcome-screen" id="welcomeScreen">
+            <div class="welcome-content">
+                <h1 class="welcome-title">Perspective</h1>
+                <p class="welcome-subtitle">
+                    Transform how you see the world through 20 interconnected books that have changed millions of lives.
+                    <br><br>
+                    <strong>Choose your transformation journey:</strong>
+                </p>
+                
+                <div class="journey-options" id="journeyOptions">
+                    <div class="journey-card" data-journey="mindfulness">
+                        <div class="journey-icon">🧘</div>
+                        <div class="journey-title">Inner Peace</div>
+                        <div class="journey-desc">Find calm, presence, and freedom from mental suffering</div>
+                    </div>
+                    <div class="journey-card" data-journey="growth">
+                        <div class="journey-icon">🌱</div>
+                        <div class="journey-title">Personal Growth</div>
+                        <div class="journey-desc">Build habits, resilience, and unlock your potential</div>
+                    </div>
+                    <div class="journey-card" data-journey="meaning">
+                        <div class="journey-icon">🎯</div>
+                        <div class="journey-title">Purpose & Meaning</div>
+                        <div class="journey-desc">Discover your calling and live with deeper significance</div>
+                    </div>
+                    <div class="journey-card" data-journey="wisdom">
+                        <div class="journey-icon">🦉</div>
+                        <div class="journey-title">Ancient Wisdom</div>
+                        <div class="journey-desc">Timeless philosophy and spiritual insights for modern life</div>
+                    </div>
+                    <div class="journey-card" data-journey="understanding">
+                        <div class="journey-icon">🧠</div>
+                        <div class="journey-title">Deep Understanding</div>
+                        <div class="journey-desc">How your mind works and how to think more clearly</div>
+                    </div>
+                    <div class="journey-card" data-journey="explore">
+                        <div class="journey-icon">🗺️</div>
+                        <div class="journey-title">Explore All</div>
+                        <div class="journey-desc">Discover connections between all transformative ideas</div>
+                    </div>
+                </div>
+                
+                <button class="start-button" id="startButton" disabled>Begin Your Journey</button>
+            </div>
+        </div>
+
+        <!-- Main Interface -->
+        <div class="top-bar">
+            <div class="logo">Perspective</div>
+            <div class="progress-container">
+                <div class="journey-progress" id="progressText">Choose a journey to begin</div>
+            </div>
+            <div class="controls">
+                <button class="control-btn active" onclick="showAllConnections()">All Books</button>
+                <button class="control-btn" onclick="showThemeConnections('mindfulness')">Mindfulness</button>
+                <button class="control-btn" onclick="showThemeConnections('habits')">Habits</button>
+                <button class="control-btn" onclick="showThemeConnections('psychology')">Psychology</button>
+                <button class="control-btn" onclick="showRandomBook()">🎲 Surprise</button>
+            </div>
+        </div>
+
+        <div class="toggle-list" id="toggleList" onclick="toggleReadingList()">
+            📚 Reading Path
+        </div>
+
+        <div class="reading-list" id="readingList">
+            <h3 id="journeyTitle">Your Journey</h3>
+            <div id="readingItems"></div>
+        </div>
+
+        <div class="network-container">
+            <svg width="100%" height="100%" id="network"></svg>
+        </div>
+
+        <div class="info-panel" id="infoPanel">
+            <button class="close-btn" onclick="closePanel()">×</button>
+            <div class="panel-header">
+                <h1 class="book-title" id="bookTitle"></h1>
+                <p class="book-author" id="bookAuthor"></p>
+                <div class="perspective-shift" id="perspectiveShift"></div>
+                <div class="concept-tags" id="concepts"></div>
+                <div class="action-buttons">
+                    <button class="action-btn" onclick="markAsRead()" id="markReadBtn">✓ Mark as Read</button>
+                    <button class="action-btn" onclick="addToJourney()" id="addToJourneyBtn">+ Add to Journey</button>
+                    <button class="action-btn" onclick="findSimilar()" id="findSimilarBtn">🔗 Find Similar</button>
+                </div>
+            </div>
+            <div class="panel-content">
+                <div class="section">
+                    <h3>📚 About This Book</h3>
+                    <p id="bookDescription"></p>
+                </div>
+
+                <div class="section">
+                    <h3>💡 Key Insights</h3>
+                    <div class="insights-grid" id="insightsGrid"></div>
+                </div>
+
+                <div class="section">
+                    <h3>🎯 Memorable Quote</h3>
+                    <div id="quotesContainer"></div>
+                </div>
+
+                <div class="section">
+                    <h3>⚡ Apply It Today</h3>
+                    <ul class="practical-list" id="practicalList"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Journey paths and book data
+        const journeyPaths = {
+            mindfulness: [6, 3, 10, 15, 20, 19], // Tolle, Aurelius, Singer, de Mello, Pirsig, Joy
+            growth: [7, 11, 18, 13, 17, 9], // Clear, Duckworth, Goggins, Manson, Covey, Westover
+            meaning: [1, 5, 14, 8, 19, 16], // Frankl, Coelho, Peck, Ruiz, Joy, Gladwell
+            wisdom: [3, 14, 15, 20, 8, 1], // Aurelius, Peck, de Mello, Pirsig, Ruiz, Frankl
+            understanding: [4, 12, 2, 16, 11, 6], // Kahneman, Cain, Harari, Gladwell, Duckworth, Tolle
+            explore: [1, 3, 4, 6, 7, 11, 2, 5, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19, 20] // All books
+        };
+
+        // User state
+        let currentJourney = null;
+        let completedBooks = new Set();
+        let currentBookIndex = 0;
+        let selectedBook = null;
+
+        const bookData = {
+            1: {
+                title: "Man's Search for Meaning", author: "Viktor Frankl", category: "philosophy", color: "#96ceb4",
+                concepts: ["meaning", "suffering", "choice", "resilience"],
+                description: "A Holocaust survivor's profound insights into how finding meaning in suffering can transform our perspective on life's challenges.",
+                perspectiveShift: "From 'Why is this happening to me?' → 'How can I find meaning and purpose in any circumstance?'",
+                insights: [
+                    { title: "Meaning in Suffering", text: "Even in the worst circumstances, we can choose our response and find meaning." },
+                    { title: "Freedom of Choice", text: "The last human freedom is choosing one's attitude in any given circumstances." },
+                    { title: "Purpose-Driven Life", text: "Life asks us what we can contribute, not what we can get from it." }
+                ],
+                quote: { text: "Everything can be taken from a man but one thing: the last of human freedoms—to choose one's attitude in any given set of circumstances.", context: "Core philosophy of logotherapy" },
+                practical: [
+                    "When facing difficulties, ask 'What meaning can I find in this?' rather than 'Why me?'",
+                    "Focus on what you can control: your response and attitude",
+                    "Identify your unique purpose and let it guide your decisions",
+                    "Practice gratitude for small freedoms and choices you have daily"
+                ]
+            },
+            2: {
+                title: "Sapiens", author: "Yuval Noah Harari", category: "science", color: "#feca57",
+                concepts: ["evolution", "society", "beliefs", "systems"],
+                description: "Reframes human history and questions the stories we tell ourselves about civilization, progress, and what makes us human.",
+                perspectiveShift: "From seeing human progress as inevitable → Understanding it as a series of chance events and shared beliefs",
+                insights: [
+                    { title: "Shared Myths", text: "Human cooperation depends on shared beliefs in things that exist only in our imagination." },
+                    { title: "Agricultural Revolution", text: "The shift to farming may have been humanity's biggest mistake, not its greatest achievement." },
+                    { title: "Happiness Question", text: "Despite all our progress, are we actually happier than our ancestors?" }
+                ],
+                quote: { text: "The real difference between us and chimpanzees is the mythical glue that binds together large numbers of individuals.", context: "On human cooperation" },
+                practical: [
+                    "Question the 'stories' that govern your industry, society, or personal beliefs",
+                    "Recognize which of your daily concerns are based on imagined constructs vs. biological needs",
+                    "Consider how future humans might view our current 'progress'",
+                    "Look for the 'shared myths' that enable cooperation in your organization"
+                ]
+            },
+            3: {
+                title: "Meditations", author: "Marcus Aurelius", category: "philosophy", color: "#96ceb4",
+                concepts: ["mindfulness", "stoicism", "self-discipline", "virtue"],
+                description: "Ancient Stoic wisdom on accepting what we cannot control and focusing on what we can—written by a Roman Emperor for himself.",
+                perspectiveShift: "From trying to control external events → Mastering your internal responses and character",
+                insights: [
+                    { title: "Dichotomy of Control", text: "Focus only on what's within your control—your thoughts, actions, and responses." },
+                    { title: "Present Moment", text: "The only time we truly have is now—the past is gone, the future uncertain." },
+                    { title: "Character Building", text: "Obstacles are opportunities to develop virtue and strength of character." }
+                ],
+                quote: { text: "You have power over your mind—not outside events. Realize this, and you will find strength.", context: "Core Stoic principle" },
+                practical: [
+                    "Before reacting to setbacks, ask: 'Is this within my control?'",
+                    "Start each day reflecting on what you can and cannot influence",
+                    "Practice viewing obstacles as opportunities to develop character",
+                    "End each day reviewing your responses, not external outcomes"
+                ]
+            },
+            4: {
+                title: "Thinking, Fast and Slow", author: "Daniel Kahneman", category: "psychology", color: "#ff6b6b",
+                concepts: ["cognitive-bias", "decision-making", "psychology", "rationality"],
+                description: "Reveals the hidden biases that shape our thinking and decision-making processes through decades of psychological research.",
+                perspectiveShift: "From trusting your intuition completely → Understanding when to trust it and when to engage analytical thinking",
+                insights: [
+                    { title: "Two Systems", text: "System 1 (fast, intuitive) vs System 2 (slow, analytical) govern our thoughts." },
+                    { title: "Cognitive Biases", text: "We systematically make predictable errors in judgment and decision-making." },
+                    { title: "Loss Aversion", text: "We feel losses twice as strongly as equivalent gains—this shapes all our choices." }
+                ],
+                quote: { text: "Nothing in life is as important as you think it is, while you are thinking about it.", context: "On focusing illusion" },
+                practical: [
+                    "For important decisions, slow down and engage System 2 thinking",
+                    "Question your first instinct—especially when stakes are high",
+                    "Look for evidence that contradicts your initial judgment",
+                    "Use checklists and frameworks to reduce bias in repeated decisions"
+                ]
+            },
+            5: {
+                title: "The Alchemist", author: "Paulo Coelho", category: "spirituality", color: "#4ecdc4",
+                concepts: ["purpose", "journey", "intuition", "dreams"],
+                description: "A metaphorical tale about following your dreams and listening to your heart, told through a shepherd's journey to find treasure.",
+                perspectiveShift: "From external seeking → Understanding that the treasure you seek is often within you and in the journey itself",
+                insights: [
+                    { title: "Personal Legend", text: "Everyone has a unique purpose or 'Personal Legend' they're meant to fulfill." },
+                    { title: "Universal Language", text: "The universe conspires to help you achieve your dreams when you truly commit." },
+                    { title: "Present Wisdom", text: "The journey and growth matter more than the destination." }
+                ],
+                quote: { text: "And, when you want something, all the universe conspires in helping you to achieve it.", context: "On pursuing your Personal Legend" },
+                practical: [
+                    "Identify what you loved doing as a child—clues to your Personal Legend",
+                    "Pay attention to recurring dreams, interests, or opportunities",
+                    "Trust your intuition more, especially about life direction",
+                    "See setbacks as part of the journey, not evidence you should quit"
+                ]
+            },
+            6: {
+                title: "The Power of Now", author: "Eckhart Tolle", category: "spirituality", color: "#4ecdc4",
+                concepts: ["mindfulness", "presence", "consciousness", "suffering"],
+                description: "Transforms perspective on time, presence, and the nature of consciousness by distinguishing between your true self and your ego.",
+                perspectiveShift: "From identifying with your thoughts and ego → Recognizing yourself as the consciousness that observes thoughts",
+                insights: [
+                    { title: "You Are Not Your Mind", text: "You are not your thoughts—you are the awareness that observes thoughts." },
+                    { title: "Present Moment Power", text: "Life is only ever happening now; past and future are mental constructs." },
+                    { title: "Pain vs. Suffering", text: "Pain is inevitable, but suffering (mental resistance to pain) is optional." }
+                ],
+                quote: { text: "Realize deeply that the present moment is all you have. Make the NOW the primary focus of your life.", context: "Core teaching on presence" },
+                practical: [
+                    "Practice observing your thoughts without getting caught up in them",
+                    "When anxious or stressed, return attention to your breath and body",
+                    "Accept present circumstances while still working toward change",
+                    "Notice when you're living in past regrets or future anxieties"
+                ]
+            },
+            7: {
+                title: "Atomic Habits", author: "James Clear", category: "development", color: "#45b7d1",
+                concepts: ["habits", "systems", "identity", "behavior-change"],
+                description: "Shows how tiny changes compound into remarkable results through systematic habit formation and identity-based change.",
+                perspectiveShift: "From focusing on goals → Building systems and from changing behavior → Changing identity",
+                insights: [
+                    { title: "1% Better Daily", text: "Small improvements compound over time to create remarkable transformations." },
+                    { title: "Identity-Based Habits", text: "Focus on who you want to become, not what you want to achieve." },
+                    { title: "Environment Design", text: "Make good habits obvious and bad habits invisible through environmental cues." }
+                ],
+                quote: { text: "You do not rise to the level of your goals. You fall to the level of your systems.", context: "On systems vs. goals" },
+                practical: [
+                    "Start new habits with a 2-minute version to build consistency",
+                    "Stack new habits onto existing ones (habit stacking)",
+                    "Change your environment to support desired behaviors",
+                    "Focus on identity: 'I am someone who...' rather than 'I want to...'"
+                ]
+            },
+            8: {
+                title: "The Four Agreements", author: "Don Miguel Ruiz", category: "spirituality", color: "#4ecdc4",
+                concepts: ["beliefs", "self-talk", "freedom", "consciousness"],
+                description: "Ancient Toltec wisdom about the power of agreements we make with ourselves and others, offering a path to personal freedom.",
+                perspectiveShift: "From being a victim of others' opinions → Taking responsibility for your mental and emotional freedom",
+                insights: [
+                    { title: "Personal Agreements", text: "We make unconscious agreements that limit our freedom and happiness." },
+                    { title: "Breaking Domestication", text: "Society 'domesticates' us with beliefs that may not serve our authentic self." },
+                    { title: "Truth vs. Story", text: "Most of our suffering comes from the stories we tell ourselves, not reality." }
+                ],
+                quote: { text: "Nothing others do is because of you. What others say and do is a projection of their own reality.", context: "On not taking things personally" },
+                practical: [
+                    "Monitor your self-talk and choose words that empower rather than diminish",
+                    "When someone criticizes you, remember it's about their reality, not yours",
+                    "Ask questions instead of making assumptions about others' intentions",
+                    "Focus on doing your best in each moment, regardless of outcomes"
+                ]
+            },
+            9: {
+                title: "Educated", author: "Tara Westover", category: "development", color: "#45b7d1",
+                concepts: ["growth", "education", "identity", "resilience"],
+                description: "A powerful memoir about the transformative power of education and self-determination in breaking free from limiting circumstances.",
+                perspectiveShift: "From accepting your circumstances as permanent → Understanding that education can fundamentally change your life trajectory",
+                insights: [
+                    { title: "Power of Learning", text: "Education isn't just about knowledge—it's about expanding your sense of what's possible." },
+                    { title: "Identity Evolution", text: "Growth sometimes requires letting go of parts of your identity and relationships." },
+                    { title: "Truth vs. Loyalty", text: "Sometimes pursuing truth conflicts with family or community loyalty." }
+                ],
+                quote: { text: "You can love someone and still choose to say goodbye to them.", context: "On difficult family dynamics" },
+                practical: [
+                    "Question beliefs you've never examined—especially from childhood",
+                    "Seek diverse perspectives and experiences outside your comfort zone",
+                    "Understand that growth may create distance from some relationships",
+                    "Document your learning journey—progress isn't always visible day-to-day"
+                ]
+            },
+            10: {
+                title: "The Untethered Soul", author: "Michael A. Singer", category: "spirituality", color: "#4ecdc4",
+                concepts: ["consciousness", "observer", "freedom", "mindfulness"],
+                description: "Explores the nature of consciousness and how to free yourself from limiting thoughts and emotions by understanding who you really are.",
+                perspectiveShift: "From identifying with your thoughts and emotions → Recognizing yourself as the consciousness that observes them",
+                insights: [
+                    { title: "The Witness", text: "You are the consciousness that witnesses thoughts, not the thoughts themselves." },
+                    { title: "Energy Flow", text: "Emotional blockages occur when we resist life's natural flow of energy." },
+                    { title: "True Freedom", text: "Freedom comes from releasing our need to control inner and outer experiences." }
+                ],
+                quote: { text: "You are not the voice of the mind—you are the one who hears it.", context: "On consciousness vs. mind" },
+                practical: [
+                    "Practice observing your thoughts without engaging with them",
+                    "Notice physical sensations of emotions without trying to fix them",
+                    "Let difficult emotions flow through you rather than storing them",
+                    "Ask yourself: 'Who is aware of this thought/feeling?'"
+                ]
+            },
+            11: {
+                title: "Grit", author: "Angela Duckworth", category: "psychology", color: "#ff6b6b",
+                concepts: ["persistence", "passion", "resilience", "growth"],
+                description: "Research-based insights on how passion and persistence matter more than talent in achieving long-term success.",
+                perspectiveShift: "From believing talent determines success → Understanding that passion and persistence are more predictive of achievement",
+                insights: [
+                    { title: "Grit Formula", text: "Grit = Passion + Persistence toward long-term goals." },
+                    { title: "Growth Over Talent", text: "Believing you can improve through effort increases your grit." },
+                    { title: "Deliberate Practice", text: "Focused, challenging practice designed to improve performance matters more than time spent." }
+                ],
+                quote: { text: "Grit is passion and perseverance for very long-term goals. Grit is having stamina.", context: "Definition of grit" },
+                practical: [
+                    "Identify your ultimate concern—what do you care about most deeply?",
+                    "View setbacks as learning opportunities rather than failures",
+                    "Practice deliberately: focus on weaknesses, seek feedback, push beyond comfort",
+                    "Develop a growth mindset: challenges develop your brain and abilities"
+                ]
+            },
+            12: {
+                title: "Quiet", author: "Susan Cain", category: "psychology", color: "#ff6b6b",
+                concepts: ["personality", "introversion", "strengths", "society"],
+                description: "Reframes introversion as a strength and challenges extroverted cultural biases, showing how introverts contribute uniquely to society.",
+                perspectiveShift: "From seeing introversion as a limitation → Recognizing it as a different but equally valuable way of being",
+                insights: [
+                    { title: "Introvert Strengths", text: "Introverts often excel at deep thinking, listening, and creating meaningful connections." },
+                    { title: "Cultural Bias", text: "Western culture has an 'extrovert ideal' that undervalues introvert contributions." },
+                    { title: "Optimal Environment", text: "Introverts and extroverts have different optimal arousal levels for peak performance." }
+                ],
+                quote: { text: "The secret to life is to put yourself in the right lighting.", context: "On finding environments where you thrive" },
+                practical: [
+                    "Honor your need for solitude to recharge—it's not selfish, it's necessary",
+                    "Prepare for social interactions to feel more confident and engaged",
+                    "Seek environments and roles that suit your temperament",
+                    "Communicate your working style and needs to others"
+                ]
+            },
+            13: {
+                title: "The Subtle Art of Not Giving a F*ck", author: "Mark Manson", category: "development", color: "#45b7d1",
+                concepts: ["priorities", "values", "responsibility", "choice"],
+                description: "A counterintuitive approach to living well by choosing what to care about and accepting that life involves inevitable suffering.",
+                perspectiveShift: "From trying to avoid all problems → Choosing which problems are worth having and solving",
+                insights: [
+                    { title: "Selective Caring", text: "Life is about choosing what's worth your attention and what isn't." },
+                    { title: "Problem Choice", text: "Happiness comes from solving problems, not avoiding them." },
+                    { title: "Values First", text: "Better values lead to better problems and better life satisfaction." }
+                ],
+                quote: { text: "The desire for more positive experience is itself a negative experience.", context: "On the paradox of chasing happiness" },
+                practical: [
+                    "Identify your core values and align your attention with them",
+                    "Stop caring about things outside your control or influence",
+                    "Choose problems that align with your values and skills",
+                    "Accept responsibility for your reactions, not others' actions"
+                ]
+            },
+            14: {
+                title: "The Road Less Traveled", author: "M. Scott Peck", category: "philosophy", color: "#96ceb4",
+                concepts: ["discipline", "growth", "love", "spirituality"],
+                description: "Combines psychology and spirituality to explore the nature of personal growth, discipline, and mature love.",
+                perspectiveShift: "From avoiding life's difficulties → Embracing them as opportunities for spiritual and psychological growth",
+                insights: [
+                    { title: "Life is Difficult", text: "Accepting that life is difficult makes it easier to bear." },
+                    { title: "Delayed Gratification", text: "Discipline is choosing between what you want now and what you want most." },
+                    { title: "True Love", text: "Love is not a feeling but an action—the will to extend yourself for another's growth." }
+                ],
+                quote: { text: "Life is difficult. This is a great truth, and once we truly see this truth, we transcend it.", context: "Opening wisdom" },
+                practical: [
+                    "Delay gratification—do the hard things first",
+                    "Take full responsibility for your life and choices",
+                    "Embrace problems as opportunities for growth",
+                    "Practice genuine love by supporting others' authentic development"
+                ]
+            },
+            15: {
+                title: "Awareness", author: "Anthony de Mello", category: "spirituality", color: "#4ecdc4",
+                concepts: ["awareness", "illusion", "conditioning", "freedom"],
+                description: "Challenges our attachments and illusions to find true freedom and happiness through radical awareness and acceptance.",
+                perspectiveShift: "From seeking happiness through external changes → Finding it through awareness and acceptance of what is",
+                insights: [
+                    { title: "Illusion of Control", text: "Most of our suffering comes from trying to control what cannot be controlled." },
+                    { title: "Social Conditioning", text: "We're programmed by society to seek happiness in all the wrong places." },
+                    { title: "Awareness Heals", text: "Simple awareness of our patterns and illusions begins to dissolve them." }
+                ],
+                quote: { text: "You don't have to add anything to yourself to be happy. You've got to drop something.", context: "On letting go of illusions" },
+                practical: [
+                    "Observe your thoughts and reactions without trying to change them",
+                    "Question your assumptions about what makes you happy",
+                    "Notice when you're seeking validation or approval from others",
+                    "Practice accepting situations as they are while still taking appropriate action"
+                ]
+            },
+            16: {
+                title: "Outliers", author: "Malcolm Gladwell", category: "science", color: "#feca57",
+                concepts: ["success", "opportunity", "culture", "practice"],
+                description: "Reframes success as a product of opportunity, culture, and timing rather than just individual talent and effort.",
+                perspectiveShift: "From believing success is purely individual achievement → Understanding how context, timing, and opportunity shape outcomes",
+                insights: [
+                    { title: "10,000 Hour Rule", text: "Mastery requires approximately 10,000 hours of deliberate practice." },
+                    { title: "Cultural Legacy", text: "Cultural background significantly impacts how we approach challenges and opportunities." },
+                    { title: "Hidden Advantages", text: "Success often depends on advantages that aren't immediately visible." }
+                ],
+                quote: { text: "No one—not rock stars, not professional athletes, not software billionaires—ever makes it alone.", context: "On collective achievement" },
+                practical: [
+                    "Recognize the advantages and opportunities that have shaped your path",
+                    "Look for hidden factors behind others' success before comparing yourself",
+                    "Create opportunities for others who lack the advantages you've had",
+                    "Focus on deliberate practice in your chosen field"
+                ]
+            },
+            17: {
+                title: "The 7 Habits of Highly Effective People", author: "Stephen R. Covey", category: "development", color: "#45b7d1",
+                concepts: ["effectiveness", "principles", "character", "leadership"],
+                description: "Principle-centered approach to personal and interpersonal effectiveness based on character development and universal principles.",
+                perspectiveShift: "From personality-based approaches → Character-based approaches to effectiveness and leadership",
+                insights: [
+                    { title: "Inside-Out Change", text: "Real change starts from within—with your paradigms and character." },
+                    { title: "Principles vs Values", text: "Principles are universal truths; values are personal beliefs that may or may not align with principles." },
+                    { title: "Interdependence", text: "True maturity is moving from dependence through independence to interdependence." }
+                ],
+                quote: { text: "Most people do not listen with the intent to understand; they listen with the intent to reply.", context: "On empathic communication" },
+                practical: [
+                    "Take responsibility for your responses to circumstances (be proactive)",
+                    "Define your personal mission statement and values",
+                    "Prioritize important but not urgent activities",
+                    "Seek first to understand others before seeking to be understood"
+                ]
+            },
+            18: {
+                title: "Can't Hurt Me", author: "David Goggins", category: "development", color: "#45b7d1",
+                concepts: ["resilience", "mental-toughness", "discipline", "potential"],
+                description: "Extreme approach to pushing beyond perceived limitations and mental barriers through radical self-discipline and mental toughness.",
+                perspectiveShift: "From accepting your current limitations → Understanding that most limitations are mental constructs that can be overcome",
+                insights: [
+                    { title: "Calloused Mind", text: "Mental toughness is like a callus—it's built through repeated exposure to discomfort." },
+                    { title: "40% Rule", text: "When you think you're done, you're only at 40% of your actual capability." },
+                    { title: "Accountability Mirror", text: "Raw honesty about your current reality is the first step to transformation." }
+                ],
+                quote: { text: "You are in danger of living a life so comfortable and soft, that you will die without ever realizing your true potential.", context: "On complacency" },
+                practical: [
+                    "Do something difficult every day to build mental toughness",
+                    "When you want to quit, push through—you likely have more left than you think",
+                    "Be brutally honest about your weaknesses and limitations",
+                    "Use past struggles as fuel for current challenges"
+                ]
+            },
+            19: {
+                title: "The Book of Joy", author: "Dalai Lama & Desmond Tutu", category: "spirituality", color: "#4ecdc4",
+                concepts: ["joy", "compassion", "perspective", "wisdom"],
+                description: "Two spiritual leaders explore the nature of lasting joy despite life's challenges, offering wisdom from different faith traditions.",
+                perspectiveShift: "From seeking happiness through external circumstances → Cultivating joy as an inner state that transcends circumstances",
+                insights: [
+                    { title: "Joy vs Happiness", text: "Joy is deeper than happiness—it can exist even in the presence of suffering." },
+                    { title: "Compassion Creates Joy", text: "Focusing on others' wellbeing generates more joy than self-focus." },
+                    { title: "Acceptance and Action", text: "Accept what cannot be changed while working to change what can be." }
+                ],
+                quote: { text: "The ultimate source of happiness is not money and power, but warm-heartedness.", context: "On the source of joy" },
+                practical: [
+                    "Practice gratitude daily for simple pleasures and basic necessities",
+                    "When facing difficulties, ask: 'How might this serve my growth or others?'",
+                    "Cultivate compassion through loving-kindness meditation",
+                    "Remember that all beings want happiness and freedom from suffering"
+                ]
+            },
+            20: {
+                title: "Zen and the Art of Motorcycle Maintenance", author: "Robert M. Pirsig", category: "philosophy", color: "#96ceb4",
+                concepts: ["quality", "mindfulness", "philosophy", "presence"],
+                description: "Philosophical journey exploring the relationship between rationality and spirituality, quality and craftsmanship, through motorcycle maintenance metaphors.",
+                perspectiveShift: "From seeing work and spirituality as separate → Understanding how quality and presence can transform any activity into spiritual practice",
+                insights: [
+                    { title: "Quality Defined", text: "Quality is not a property of things but a relationship between the observer and observed." },
+                    { title: "Gumption", text: "Enthusiasm and motivation (gumption) are essential for quality work and living." },
+                    { title: "Integration", text: "Both analytical and intuitive approaches to life have value and can be integrated." }
+                ],
+                quote: { text: "The real cycle you're working on is a cycle called yourself.", context: "On self-development through work" },
+                practical: [
+                    "Approach routine tasks with full attention and care",
+                    "Balance analytical thinking with intuitive understanding",
+                    "Find ways to maintain 'gumption' when motivation flags",
+                    "Look for quality in small details of daily life"
+                ]
+            }
+        };
+
+        // Create books array from bookData
+        const books = Object.keys(bookData).map(id => ({
+            id: parseInt(id),
+            ...bookData[id]
+        }));
+
+        // Create concept connections
+        const connections = [];
+        const conceptMap = {};
+
+        books.forEach(book => {
+            book.concepts.forEach(concept => {
+                if (!conceptMap[concept]) conceptMap[concept] = [];
+                conceptMap[concept].push(book.id);
+            });
+        });
+
+        Object.values(conceptMap).forEach(bookIds => {
+            for (let i = 0; i < bookIds.length; i++) {
+                for (let j = i + 1; j < bookIds.length; j++) {
+                    const existing = connections.find(c => 
+                        (c.source === bookIds[i] && c.target === bookIds[j]) ||
+                        (c.source === bookIds[j] && c.target === bookIds[i])
+                    );
+                    if (existing) {
+                        existing.strength += 1;
+                    } else {
+                        connections.push({
+                            source: bookIds[i],
+                            target: bookIds[j],
+                            strength: 1
+                        });
+                    }
+                }
+            }
+        });
+
+        // Initialize welcome screen
+        document.querySelectorAll('.journey-card').forEach(card => {
+            card.addEventListener('click', function() {
+                document.querySelectorAll('.journey-card').forEach(c => c.classList.remove('selected'));
+                this.classList.add('selected');
+                document.getElementById('startButton').disabled = false;
+                currentJourney = this.dataset.journey;
+            });
+        });
+
+        document.getElementById('startButton').addEventListener('click', function() {
+            if (currentJourney) {
+                startJourney();
+            }
+        });
+
+        function startJourney() {
+            document.getElementById('welcomeScreen').classList.add('hidden');
+            setTimeout(() => {
+                document.getElementById('welcomeScreen').style.display = 'none';
+                initializeVisualization();
+                updateJourneyProgress();
+                updateReadingList();
+            }, 800);
+        }
+
+        function updateJourneyProgress() {
+            const journeyNames = {
+                mindfulness: 'Inner Peace Journey',
+                growth: 'Personal Growth Journey',
+                meaning: 'Purpose & Meaning Journey',
+                wisdom: 'Ancient Wisdom Journey',
+                understanding: 'Deep Understanding Journey',
+                explore: 'Complete Exploration'
+            };
+
+            const path = journeyPaths[currentJourney];
+            const progress = `${journeyNames[currentJourney]} • ${completedBooks.size}/${path.length} books completed`;
+            document.getElementById('progressText').textContent = progress;
+        }
+
+        function updateReadingList() {
+            const journeyNames = {
+                mindfulness: 'Inner Peace Path',
+                growth: 'Growth Path',
+                meaning: 'Purpose Path',
+                wisdom: 'Wisdom Path',
+                understanding: 'Understanding Path',
+                explore: 'Complete Journey'
+            };
+
+            document.getElementById('journeyTitle').textContent = journeyNames[currentJourney];
+            
+            const path = journeyPaths[currentJourney];
+            const readingItems = document.getElementById('readingItems');
+            
+            readingItems.innerHTML = path.map((bookId, index) => {
+                const book = bookData[bookId];
+                const isCompleted = completedBooks.has(bookId);
+                const isNext = index === currentBookIndex && !isCompleted;
+                
+                return `
+                    <div class="reading-item ${isCompleted ? 'completed' : ''} ${isNext ? 'next' : ''}" onclick="focusOnBook(${bookId})">
+                        <div class="book-color" style="background: ${book.color}"></div>
+                        <div class="book-info">
+                            <div class="book-mini-title">${book.title}</div>
+                            <div class="book-mini-author">${book.author}</div>
+                        </div>
+                        ${isCompleted ? '✓' : isNext ? '→' : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleReadingList() {
+            const list = document.getElementById('readingList');
+            list.classList.toggle('visible');
+        }
+
+        function focusOnBook(bookId) {
+            const bookElement = node.filter(d => d.id === bookId);
+            if (bookElement.size() > 0) {
+                const book = books.find(b => b.id === bookId);
+                showBookInfo({target: bookElement.node()}, book);
+            }
+        }
+
+        function markAsRead() {
+            if (selectedBook) {
+                completedBooks.add(selectedBook.id);
+                
+                // Update current book index
+                const path = journeyPaths[currentJourney];
+                const currentIndex = path.indexOf(selectedBook.id);
+                if (currentIndex >= currentBookIndex) {
+                    currentBookIndex = Math.min(currentIndex + 1, path.length - 1);
+                }
+                
+                updateJourneyProgress();
+                updateReadingList();
+                updateNodeStyles();
+                
+                // Update button text
+                document.getElementById('markReadBtn').textContent = '✓ Read';
+                document.getElementById('markReadBtn').style.opacity = '0.6';
+            }
+        }
+
+        function addToJourney() {
+            // This could add the book to a custom reading list
+            alert('Feature coming soon: Add books to your custom reading journey!');
+        }
+
+        function findSimilar() {
+            if (selectedBook) {
+                // Find books with similar concepts
+                const similarBooks = books.filter(book => 
+                    book.id !== selectedBook.id &&
+                    book.concepts.some(concept => selectedBook.concepts.includes(concept))
+                );
+                
+                // Highlight similar books
+                node.style("opacity", d => 
+                    d.id === selectedBook.id || similarBooks.some(b => b.id === d.id) ? 1 : 0.3
+                );
+                
+                closePanel();
+            }
+        }
+
+        function updateNodeStyles() {
+            const path = journeyPaths[currentJourney];
+            const nextBookId = currentBookIndex < path.length ? path[currentBookIndex] : null;
+            
+            node
+                .classed("completed", d => completedBooks.has(d.id))
+                .classed("next", d => d.id === nextBookId && !completedBooks.has(d.id));
+        }
+
+        // Set up SVG and visualization (same as before)
+        const svg = d3.select("#network");
+        let width, height, g, zoom, simulation, link, node, labels;
+
+        function initializeVisualization() {
+            width = window.innerWidth;
+            height = window.innerHeight - 80;
+
+            svg.attr("width", width).attr("height", height);
+
+            g = svg.append("g");
+
+            zoom = d3.zoom()
+                .scaleExtent([0.4, 2])
+                .on("zoom", (event) => {
+                    g.attr("transform", event.transform);
+                });
+
+            svg.call(zoom);
+
+            simulation = d3.forceSimulation(books)
+                .force("link", d3.forceLink(connections).id(d => d.id).distance(180))
+                .force("charge", d3.forceManyBody().strength(-500))
+                .force("center", d3.forceCenter(width / 2, height / 2))
+                .force("collision", d3.forceCollide().radius(40));
+
+            link = g.append("g")
+                .selectAll("line")
+                .data(connections)
+                .enter().append("line")
+                .attr("class", "link")
+                .attr("stroke-width", d => Math.sqrt(d.strength));
+
+            node = g.append("g")
+                .selectAll("circle")
+                .data(books)
+                .enter().append("circle")
+                .attr("class", "node")
+                .attr("r", 25)
+                .attr("fill", d => d.color)
+                .attr("stroke", "#fff")
+                .attr("stroke-width", 2)
+                .on("click", showBookInfo)
+                .call(d3.drag()
+                    .on("start", dragstarted)
+                    .on("drag", dragged)
+                    .on("end", dragended));
+
+            labels = g.append("g")
+                .selectAll("text")
+                .data(books)
+                .enter().append("text")
+                .attr("class", "node-label")
+                .text(d => d.author.split(' ').slice(-1)[0])
+                .attr("dy", 40);
+
+            simulation.on("tick", () => {
+                link
+                    .attr("x1", d => d.source.x)
+                    .attr("y1", d => d.source.y)
+                    .attr("x2", d => d.target.x)
+                    .attr("y2", d => d.target.y);
+
+                node
+                    .attr("cx", d => d.x)
+                    .attr("cy", d => d.y);
+
+                labels
+                    .attr("x", d => d.x)
+                    .attr("y", d => d.y);
+            });
+
+            updateNodeStyles();
+        }
+
+        function showBookInfo(event, d) {
+            selectedBook = d;
+            const bookInfo = bookData[d.id];
+            
+            // Update panel content (same as before)
+            document.getElementById("bookTitle").textContent = bookInfo.title;
+            document.getElementById("bookAuthor").textContent = `by ${bookInfo.author}`;
+            document.getElementById("perspectiveShift").textContent = bookInfo.perspectiveShift;
+            
+            document.getElementById("concepts").innerHTML = bookInfo.concepts.map(concept => 
+                `<span class="concept-tag">${concept.replace('-', ' ')}</span>`
+            ).join('');
+
+            document.getElementById("bookDescription").textContent = bookInfo.description;
+
+            document.getElementById("insightsGrid").innerHTML = bookInfo.insights.map(insight => `
+                <div class="insight-card">
+                    <div class="insight-title">${insight.title}</div>
+                    <div>${insight.text}</div>
+                </div>
+            `).join('');
+
+            document.getElementById("quotesContainer").innerHTML = `
+                <div class="quote-block">
+                    <div class="quote-text">"${bookInfo.quote.text}"</div>
+                    <div class="quote-context">— ${bookInfo.quote.context}</div>
+                </div>
+            `;
+
+            document.getElementById("practicalList").innerHTML = bookInfo.practical.map(item => 
+                `<li>${item}</li>`
+            ).join('');
+
+            // Update action buttons
+            const isCompleted = completedBooks.has(d.id);
+            const markReadBtn = document.getElementById("markReadBtn");
+            markReadBtn.textContent = isCompleted ? '✓ Read' : '✓ Mark as Read';
+            markReadBtn.style.opacity = isCompleted ? '0.6' : '1';
+
+            document.getElementById("infoPanel").classList.add("visible");
+            
+            node.classed("selected", false);
+            d3.select(event.target).classed("selected", true);
+            
+            highlightConnections(d.id);
+        }
+
+        function closePanel() {
+            document.getElementById("infoPanel").classList.remove("visible");
+            showAllConnections();
+            node.classed("selected", false);
+            selectedBook = null;
+        }
+
+        function highlightConnections(bookId) {
+            const connectedIds = connections
+                .filter(c => c.source.id === bookId || c.target.id === bookId)
+                .map(c => c.source.id === bookId ? c.target.id : c.source.id);
+
+            node.style("opacity", d => 
+                d.id === bookId || connectedIds.includes(d.id) ? 1 : 0.25
+            );
+
+            link.style("opacity", d => 
+                d.source.id === bookId || d.target.id === bookId ? 0.6 : 0.1
+            ).style("stroke-width", d => 
+                d.source.id === bookId || d.target.id === bookId ? 
+                Math.sqrt(d.strength) * 2 : Math.sqrt(d.strength)
+            );
+
+            labels.style("opacity", d => 
+                d.id === bookId || connectedIds.includes(d.id) ? 1 : 0.3
+            );
+        }
+
+        function showAllConnections() {
+            document.querySelectorAll('.control-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector('.control-btn').classList.add('active');
+            
+            node.style("opacity", 1).classed("selected", false);
+            link.style("opacity", 0.3).style("stroke-width", d => Math.sqrt(d.strength));
+            labels.style("opacity", 1);
+            
+            document.getElementById("infoPanel").classList.remove("visible");
+        }
+
+        function showThemeConnections(theme) {
+            document.querySelectorAll('.control-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            const themeBooks = books.filter(book => 
+                book.concepts.some(concept => concept.includes(theme)) ||
+                book.category === theme
+            );
+
+            const themeBookIds = themeBooks.map(b => b.id);
+
+            node.style("opacity", d => themeBookIds.includes(d.id) ? 1 : 0.2)
+                .classed("selected", false);
+            labels.style("opacity", d => themeBookIds.includes(d.id) ? 1 : 0.2);
+
+            link.style("opacity", d => 
+                themeBookIds.includes(d.source.id) && themeBookIds.includes(d.target.id) ? 0.6 : 0.05
+            );
+
+            document.getElementById("infoPanel").classList.remove("visible");
+        }
+
+        function showRandomBook() {
+            const randomBook = books[Math.floor(Math.random() * books.length)];
+            const randomNode = node.filter(d => d.id === randomBook.id);
+            showBookInfo({target: randomNode.node()}, randomBook);
+        }
+
+        // Drag functions
+        function dragstarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+
+        function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+
+        // Close panel when clicking elsewhere
+        svg.on("click", function(event) {
+            if (event.target.tagName === 'svg') {
+                closePanel();
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closePanel();
+            }
+            if (event.key === ' ') {
+                event.preventDefault();
+                showRandomBook();
+            }
+        });
+    </script>
+</body>
+</html>
